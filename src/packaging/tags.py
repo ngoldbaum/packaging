@@ -179,13 +179,14 @@ def _abi3_applies(python_version: PythonVersion, threading: bool) -> bool:
     return len(python_version) > 1 and tuple(python_version) >= (3, 2) and not threading
 
 
-def _abi3t_applies(python_version: PythonVersion, threading: bool) -> bool:
+def _abi3t_applies(python_version: PythonVersion) -> bool:
     """
     Determine if the Python version supports abi3t.
 
-    PEP 803 was first implemented in Python 3.15.
+    PEP 803 was first implemented in Python 3.15. Both builds support
+    abi3t wheels.
     """
-    return len(python_version) > 1 and tuple(python_version) >= (3, 2) and threading
+    return len(python_version) > 1 and tuple(python_version) >= (3, 15)
 
 
 def _cpython_abis(py_version: PythonVersion, warn: bool = False) -> list[str]:
@@ -265,7 +266,7 @@ def cpython_tags(
 
     threading = _is_threaded_cpython(abis)
     use_abi3 = _abi3_applies(python_version, threading)
-    use_abi3t = _abi3t_applies(python_version, threading)
+    use_abi3t = _abi3t_applies(python_version)
 
     if use_abi3:
         yield from (Tag(interpreter, "abi3", platform_) for platform_ in platforms)
@@ -281,10 +282,7 @@ def cpython_tags(
                 interpreter = f"cp{version}"
                 if use_abi3:
                     yield Tag(interpreter, "abi3", platform_)
-                if use_abi3t:
-                    # Support for abi3t was introduced in Python 3.15, but in
-                    # principle abi3t wheels are possible for older limited API
-                    # versions, so allow things like ("cp37", "abi3t", "platform")
+                if use_abi3t and minor_version >= 15:
                     yield Tag(interpreter, "abi3t", platform_)
 
 
